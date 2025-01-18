@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getBalance, getMarket } from "./services/asdf.ts";
+import { getBalance, getMarket } from "./services/polyservice.ts";
 
 const App: React.FC = () => {
     const [balance, setBalance] = useState<number | null>(null);
