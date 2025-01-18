@@ -75,19 +75,43 @@ export const getBalance = async (): Promise<number> => {
     // };
 };
 
+function isSameDay(gameStartTime: string) {
+    var gst = new Date(gameStartTime);
+    var cur = new Date();
+    return gst.getFullYear() === cur.getFullYear() &&
+           gst.getMonth() === cur.getMonth() &&
+           gst.getDate() === cur.getDate();
+}
 
 export const getMarket = async (searchString: string): Promise<any> => {
     const clobClient = ClobClientInstance.getInstance();
 
-    const asdf: PaginationPayload = await clobClient.getMarkets();
-    const data = asdf.data;
+    var nextCursor: string | undefined = undefined;
+    var count = 0;
+    while (true) {
+        const asdf: PaginationPayload = await clobClient.getMarkets(nextCursor);
+        const data = asdf.data;
+        nextCursor = asdf.next_cursor;
+        console.log(nextCursor);
+        // console.log('count', asdf.count);
+        // console.log('limit', asdf.limit);
 
-    // const asdf1 = asdf.data.map((item: any) => item.question);
+        const asdf1 = data.find((item) => item.question.toLowerCase().includes(searchString.toLowerCase()) && isSameDay(item.game_start_time));
 
-    const asdf1 = data.find((item) => item.question.toLowerCase() === searchString.toLowerCase());
-
-    console.log(asdf1);
-
-    return searchString;
+        if (asdf1) {
+            // console.log('found item');
+            console.log(asdf1);
+            return asdf1.question;
+        }
+        if (nextCursor == 'LTE=') {
+            return 'error didnt find market';
+        };
+        // console.log(`didnt find going to next page, count: ${count}`);
+        count++;
+        // if (count > 10) {
+        //     // can remove once lte= confirmed to return, don't want infinite loop
+        //     return 'error didnt find market';
+        // }
+    }
 }
 
