@@ -32,7 +32,7 @@ class ClobClientInstance {
             passphrase: import.meta.env.VITE_CLOB_PASS_PHRASE
         },
         signatureType: SignatureType.POLY_GNOSIS_SAFE,
-        funderAddress: import.meta.env.FUNDER_ADDRESS
+        funderAddress: import.meta.env.VITE_FUNDER_ADDRESS
     }
 
     static getInstance() {
@@ -168,7 +168,12 @@ export const placeOrder = async (tokenId: string, orderType: Side, amount: numbe
         amount: quantity,
         price: marketPrice// currently have to set limit price because createMarketOrder also calls getMarketPrice which has a bug
     }
+    // const asdfa = await clobClient.getApiKeys();
+    // console.log(asdfa);
+
     const marketOrder: SignedOrder = await clobClient.createMarketOrder(userMarketOrder);
+    // console.log(marketOrder);
+
     const res = await clobClient.postOrder(marketOrder, OrderType.FOK);
     console.log(res);
 }
