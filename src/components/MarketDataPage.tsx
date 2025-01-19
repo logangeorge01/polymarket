@@ -101,7 +101,7 @@ const MarketDataPage: React.FC = () => {
         </p>
 
         <p>
-          <strong>Unit Size</strong>
+          <strong>Unit Size: </strong>Unit * market price must be greater than $1 for buy order
         </p>
         <input
           className="unitsize"
