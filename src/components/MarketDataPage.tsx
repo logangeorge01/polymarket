@@ -2,14 +2,19 @@ import React, { useEffect, useState } from "react";
 import { getBalance, getMarketById, placeOrder } from "../services/polyservice";
 import { Link, useParams } from "react-router-dom";
 import { Side } from "@polymarket/clob-client";
+import { getDailyPnl } from "./DailyPnL";
 
 const MarketDataPage: React.FC = () => {
-  const [balance, setBalance] = useState<number | null>(null);
   const { marketId } = useParams<{ marketId: string }>();
+
+  const [balance, setBalance] = useState<number | null>(null);
+  const [dailyPnl, setDailyPnl] = useState<number>(0);
+
   const [marketData, setMarketData] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [unitSize, setUnitSize] = useState('1');
+  const [unitSize, setUnitSize] = useState("1");
 
+  // Fetch market data
   useEffect(() => {
     const fetchMarketData = async () => {
       try {
@@ -27,15 +32,18 @@ const MarketDataPage: React.FC = () => {
     fetchMarketData();
   }, [marketId]);
 
-  // Fetch balance on mount
+  // Fetch balance + daily PnL
   useEffect(() => {
     const fetchBalanceData = async () => {
       try {
         const result = await getBalance();
         setBalance(result);
+
+        const pnl = await getDailyPnl();
+        setDailyPnl(pnl);
       } catch (err) {
         console.error(err);
-        setError("Failed to fetch balance.");
+        setError("Failed to fetch balance or daily Earnings.");
       }
     };
     fetchBalanceData();
@@ -55,143 +63,94 @@ const MarketDataPage: React.FC = () => {
     return <div>Loading market data...</div>;
   }
 
+  // Decide PnL color
+  let pnlClass = "pnl-zero";
+  if (dailyPnl > 0) pnlClass = "pnl-positive";
+  if (dailyPnl < 0) pnlClass = "pnl-negative";
+
   return (
     <div>
-        <Link to='/'><button>Home</button></Link>
+      <Link to="/">
+        <button>Home</button>
+      </Link>
 
-        {/* Balance Section */}
-        
-        <div>Your Balance: <strong>{balance ? `$${balance}` : 'Loading'}</strong></div>
+      {/* Balance + PnL */}
+      <div>
+        Your Balance:{" "}
+        <strong>{balance !== null ? `$${balance}` : "Loading"}</strong>{" "}
+        | Daily Earnings:{" "}
+        <strong className={pnlClass}>
+          {dailyPnl > 0
+            ? `+$${dailyPnl.toFixed(2)}`
+            : dailyPnl < 0
+            ? `-$${Math.abs(dailyPnl).toFixed(2)}`
+            : "$0.00"}
+        </strong>
+      </div>
 
-        {/* Market Data Display */}
-        {marketData && (
-          <div className="card">
-            <img src={marketData.icon} className="icon" />
-            <h2>{marketData.question}</h2>
-            {/* <p>
-              <strong>Market ID:</strong> {marketData.condition_id}
-            </p> */}
-            <p>
-              <strong>Description:</strong> {marketData.description}
-            </p>
-            <p>
-              <strong>Start Time:</strong> {formatDate(marketData.game_start_time)}
-            </p>
+      {/* Market Data Display */}
+      <div className="card">
+        <img src={marketData.icon} alt="icon" className="icon" />
+        <h2>{marketData.question}</h2>
 
-            <p><strong>Unit Size</strong></p>
-            <input
-              className="unitsize"
-              type="text"
-              placeholder="Unit Size"
-              value={unitSize}
-              onChange={(e) => setUnitSize(e.target.value)}
-            />
+        <p>
+          <strong>Description:</strong> {marketData.description}
+        </p>
+        <p>
+          <strong>Start Time:</strong> {formatDate(marketData.game_start_time)}
+        </p>
 
+        <p>
+          <strong>Unit Size</strong>
+        </p>
+        <input
+          className="unitsize"
+          type="text"
+          placeholder="Unit Size"
+          value={unitSize}
+          onChange={(e) => setUnitSize(e.target.value)}
+        />
 
-            {/* <p>
-              <strong>End Date:</strong> {formatDate(marketData.end_date_iso)}
-            </p>
-            <p>
-              <strong>Active:</strong> {marketData.active ? "Yes" : "No"}
-            </p>
-            <p>
-              <strong>Closed:</strong> {marketData.closed ? "Yes" : "No"}
-            </p>
-            <p>
-              <strong>Market Slug:</strong> {marketData.market_slug || "N/A"}
-            </p> */}
-  
-            {/* Tokens */}
-            {/* <h4>Tokens</h4> */}
-            {marketData.tokens && marketData.tokens.length > 0 ? (
-              marketData.tokens.map((token: any, index: number) => (
-                <div className="token-item" key={index}>
-                  {/* <p>
-                    <strong>Outcome:</strong> {token.outcome}
-                  </p>
-                  <p>
-                    <strong>Token ID:</strong> {token.token_id}
-                  </p>
-                  <p>
-                    <strong>Price:</strong> {token.price}
-                  </p>
-                  <p>
-                    <strong>Winner:</strong> {token.winner ? "Yes" : "No"}
-                  </p> */}
-  
-                  {/* Placeholder Buy / Sell Boxes */}
-                  <div className="order-actions">
-                    {/* BUY section */}
-                    <div className="order-box buy-box">
-                      <h3>Buy {token.outcome} @ ${token.price}</h3>
-                      {/* <button
-                        className="btn-buy"
-                        onClick={() =>
-                          alert(`(Placeholder) GTC Buy for tokenID: ${token.token_id}`)
-                        }
-                      >
-                        GTC
-                      </button>
-                      <button
-                        className="btn-buy"
-                        onClick={() =>
-                          alert(`(Placeholder) GTD Buy for tokenID: ${token.token_id}`)
-                        }
-                      >
-                        GTD
-                      </button> */}
-
-
-                      {/* FOK BUY */}
-                      <button
-                        className="btn-buy"
-                        onClick={() =>
-                          placeOrder(token.token_id, Side.BUY, parseFloat(unitSize))
-                        }
-                      >
-                        FOK
-                      </button>
-                    </div>
-  
-                    {/* SELL section */}
-                    <div className="order-box sell-box">
-                    <h3>Sell {token.outcome} @ ${token.price}</h3>
-                      {/* <button
-                        className="btn-sell"
-                        onClick={() =>
-                          alert(`(Placeholder) GTC Sell for tokenID: ${token.token_id}`)
-                        }
-                      >
-                        GTC
-                      </button>
-                      <button
-                        className="btn-sell"
-                        onClick={() =>
-                          alert(`(Placeholder) GTD Sell for tokenID: ${token.token_id}`)
-                        }
-                      >
-                        GTD
-                      </button> */}
-
-
-                      {/* FOK SELL */}
-                      <button
-                        className="btn-sell"
-                        onClick={() =>
-                          placeOrder(token.token_id, Side.SELL, parseFloat(unitSize))
-                        }
-                      >
-                        FOK
-                      </button>
-                    </div>
-                  </div>
+        {marketData.tokens && marketData.tokens.length > 0 ? (
+          marketData.tokens.map((token: any, index: number) => (
+            <div className="token-item" key={index}>
+              <div className="order-actions">
+                {/* BUY section */}
+                <div className="order-box buy-box">
+                  <h3>
+                    Buy {token.outcome} @ ${token.price}
+                  </h3>
+                  <button
+                    className="btn-buy"
+                    onClick={() =>
+                      placeOrder(token.token_id, Side.BUY, parseFloat(unitSize))
+                    }
+                  >
+                    FOK
+                  </button>
                 </div>
-              ))
-            ) : (
-              <p>No tokens found for this market.</p>
-            )}
-          </div>
+
+                {/* SELL section */}
+                <div className="order-box sell-box">
+                  <h3>
+                    Sell {token.outcome} @ ${token.price}
+                  </h3>
+                  <button
+                    className="btn-sell"
+                    onClick={() =>
+                      placeOrder(token.token_id, Side.SELL, parseFloat(unitSize))
+                    }
+                  >
+                    FOK
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p>No tokens found for this market.</p>
         )}
+      </div>
     </div>
   );
 };

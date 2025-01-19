@@ -16,4 +16,6 @@
 
 [] make models/poly.ts file with data structures to help with types
 
-[] implement getEarningsForUserForDay
+[X] implement getEarningsForUserForDay
+
+[] Unit Size + contract Cost to show total buy value. also should see net earnings from selling the contracts. 

@@ -146,3 +146,21 @@ input {
 .read-the-docs {
   color: #888;
 }
+
+.pnl-positive {
+  color: green;
+}
+
+.pnl-negative {
+  color: red;
+}
+
+.pnl-zero {
+  color: black; 
+}
+
+
+.error-message {
+  color: red;
+  font-weight: bold;
+}
