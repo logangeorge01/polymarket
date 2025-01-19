@@ -101,7 +101,7 @@ export const getMarket = async (searchString: string): Promise<any> => {
         if (asdf1) {
             // console.log('found item');
             console.log(asdf1);
-            return asdf1.question;
+            return asdf1;
         }
         if (nextCursor == 'LTE=') {
             return 'error didnt find market';
