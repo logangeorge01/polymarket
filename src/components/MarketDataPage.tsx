@@ -45,10 +45,7 @@ const MarketDataPage: React.FC = () => {
         {/* Market Data Display */}
         {marketData && (
           <div className="card">
-            <h3>Market Details</h3>
-            <p>
-              <strong>Question:</strong> {marketData.question}
-            </p>
+            <h2>{marketData.question}</h2>
             <p>
               <strong>Market ID:</strong> {marketData.condition_id}
             </p>
@@ -58,7 +55,7 @@ const MarketDataPage: React.FC = () => {
             <p>
               <strong>Start Time:</strong> {formatDate(marketData.game_start_time)}
             </p>
-            <p>
+            {/* <p>
               <strong>End Date:</strong> {formatDate(marketData.end_date_iso)}
             </p>
             <p>
@@ -69,10 +66,10 @@ const MarketDataPage: React.FC = () => {
             </p>
             <p>
               <strong>Market Slug:</strong> {marketData.market_slug || "N/A"}
-            </p>
+            </p> */}
   
             {/* Tokens */}
-            <h4>Tokens</h4>
+            {/* <h4>Tokens</h4> */}
             {marketData.tokens && marketData.tokens.length > 0 ? (
               marketData.tokens.map((token: any, index: number) => (
                 <div className="token-item" key={index}>

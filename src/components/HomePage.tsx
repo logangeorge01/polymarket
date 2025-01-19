@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { getBalance, getMarket, getMarketById } from "../services/polyservice";
 import "./App.css";
 import { useNavigate } from "react-router";
+import RecentMarkets from "./RecentMarkets";
+import { addRecentMarket } from "../services/recentMarketsUtil";
 
 const HomePage: React.FC = () => {
     const [balance, setBalance] = useState<number | null>(null);
@@ -37,6 +39,7 @@ const HomePage: React.FC = () => {
         }
         setError(null);
         const result = await getMarket(searchString);
+        addRecentMarket(result.question, result.condition_id);
         navigate(`/market/${result.condition_id}`);
         // TODO ROUTE TO MARKET PAGE
         // setMarketData(result);
@@ -58,27 +61,10 @@ const HomePage: React.FC = () => {
             setError("Invalid market id.");
             return;
         }
+        addRecentMarket(result.question, result.condition_id);
 
         navigate(`/market/${marketIdString}`);
-
-        //   setError(null);
-
-        // TODO ROUTE TO MARKET PAGE
-        // const result = await getMarketById(marketIdString);
-
-    //   try {
-    //     if (!marketIdString) {
-    //       setError("Please enter a market id.");
-    //       return;
-    //     }
-    //     setError(null);
-    //     const result = await getMarketById(marketIdString);
-    //     setMarketData(result);
-    //   } catch (err) {
-    //     console.error(err);
-    //     setError("Failed to fetch market data.");
-    //   }
-    };
+    };    
 
     if (searching) {
         return <div>Searching for '{searchString}' market...</div>
@@ -122,6 +108,9 @@ const HomePage: React.FC = () => {
           />
           <button onClick={handleFetchMarketById}>Fetch Market</button>
         </div>
+
+        {/* Recent Markets UI */}
+        <RecentMarkets />
       </div>
     );
   };
