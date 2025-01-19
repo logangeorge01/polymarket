@@ -92,7 +92,7 @@ export const getMarket = async (searchString: string): Promise<any> => {
         const asdf: PaginationPayload = await clobClient.getMarkets(nextCursor);
         const data = asdf.data;
         nextCursor = asdf.next_cursor;
-        console.log(nextCursor);
+        // console.log(nextCursor);
         // console.log('count', asdf.count);
         // console.log('limit', asdf.limit);
 
@@ -113,5 +113,42 @@ export const getMarket = async (searchString: string): Promise<any> => {
         //     return 'error didnt find market';
         // }
     }
+}
+
+export const getMarketById = async (marketId: string): Promise<any> => {
+    const clobClient = ClobClientInstance.getInstance();
+
+    const asdf = await clobClient.getMarket(marketId);
+
+    console.log(asdf);
+    return asdf;
+    
+    // var nextCursor: string | undefined = undefined;
+    // var count = 0;
+    // while (true) {
+    //     const asdf: PaginationPayload = await clobClient.getMarkets(nextCursor);
+    //     const data = asdf.data;
+    //     nextCursor = asdf.next_cursor;
+    //     // console.log(nextCursor);
+    //     // console.log('count', asdf.count);
+    //     // console.log('limit', asdf.limit);
+
+    //     const asdf1 = data.find((item) => item.question.toLowerCase().includes(searchString.toLowerCase()) && isSameDay(item.game_start_time));
+
+    //     if (asdf1) {
+    //         // console.log('found item');
+    //         console.log(asdf1);
+    //         return asdf1;
+    //     }
+    //     if (nextCursor == 'LTE=') {
+    //         return 'error didnt find market';
+    //     };
+    //     // console.log(`didnt find going to next page, count: ${count}`);
+    //     count++;
+    //     // if (count > 10) {
+    //     //     // can remove once lte= confirmed to return, don't want infinite loop
+    //     //     return 'error didnt find market';
+    //     // }
+    // }
 }
 

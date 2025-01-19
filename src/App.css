@@ -47,6 +47,19 @@ button:hover {
   opacity: 0.9;
 }
 
+/* Input field */
+input {
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  margin: 0.3rem;
+  background-color: white;
+  color: black;
+  border-color: darkgray;
+  width: 16rem;
+  border-width: 0.1rem;
+}
+
 /* Order Actions Container */
 .order-actions {
   display: flex;
