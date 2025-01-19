@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { getMarketById } from "../services/polyservice";
+import { getBalance, getMarketById, placeOrder } from "../services/polyservice";
 import { Link, useParams } from "react-router-dom";
+import { Side } from "@polymarket/clob-client";
 
 const MarketDataPage: React.FC = () => {
+  const [balance, setBalance] = useState<number | null>(null);
   const { marketId } = useParams<{ marketId: string }>();
   const [marketData, setMarketData] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unitSize, setUnitSize] = useState('1');
 
   useEffect(() => {
     const fetchMarketData = async () => {
@@ -23,6 +26,20 @@ const MarketDataPage: React.FC = () => {
     };
     fetchMarketData();
   }, [marketId]);
+
+  // Fetch balance on mount
+  useEffect(() => {
+    const fetchBalanceData = async () => {
+      try {
+        const result = await getBalance();
+        setBalance(result);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch balance.");
+      }
+    };
+    fetchBalanceData();
+  }, []);
 
   const formatDate = (isoString?: string) => {
     if (!isoString) return "N/A";
@@ -42,19 +59,35 @@ const MarketDataPage: React.FC = () => {
     <div>
         <Link to='/'><button>Home</button></Link>
 
+        {/* Balance Section */}
+        
+        <div>Your Balance: <strong>{balance ? `$${balance}` : 'Loading'}</strong></div>
+
         {/* Market Data Display */}
         {marketData && (
           <div className="card">
+            <img src={marketData.icon} className="icon" />
             <h2>{marketData.question}</h2>
-            <p>
+            {/* <p>
               <strong>Market ID:</strong> {marketData.condition_id}
-            </p>
+            </p> */}
             <p>
               <strong>Description:</strong> {marketData.description}
             </p>
             <p>
               <strong>Start Time:</strong> {formatDate(marketData.game_start_time)}
             </p>
+
+            <p><strong>Unit Size</strong></p>
+            <input
+              className="unitsize"
+              type="text"
+              placeholder="Unit Size"
+              value={unitSize}
+              onChange={(e) => setUnitSize(e.target.value)}
+            />
+
+
             {/* <p>
               <strong>End Date:</strong> {formatDate(marketData.end_date_iso)}
             </p>
@@ -73,7 +106,7 @@ const MarketDataPage: React.FC = () => {
             {marketData.tokens && marketData.tokens.length > 0 ? (
               marketData.tokens.map((token: any, index: number) => (
                 <div className="token-item" key={index}>
-                  <p>
+                  {/* <p>
                     <strong>Outcome:</strong> {token.outcome}
                   </p>
                   <p>
@@ -84,14 +117,14 @@ const MarketDataPage: React.FC = () => {
                   </p>
                   <p>
                     <strong>Winner:</strong> {token.winner ? "Yes" : "No"}
-                  </p>
+                  </p> */}
   
                   {/* Placeholder Buy / Sell Boxes */}
                   <div className="order-actions">
                     {/* BUY section */}
                     <div className="order-box buy-box">
-                      <h5>Buy</h5>
-                      <button
+                      <h3>Buy {token.outcome} @ ${token.price}</h3>
+                      {/* <button
                         className="btn-buy"
                         onClick={() =>
                           alert(`(Placeholder) GTC Buy for tokenID: ${token.token_id}`)
@@ -106,11 +139,14 @@ const MarketDataPage: React.FC = () => {
                         }
                       >
                         GTD
-                      </button>
+                      </button> */}
+
+
+                      {/* FOK BUY */}
                       <button
                         className="btn-buy"
                         onClick={() =>
-                          alert(`(Placeholder) FOK (Market) Buy for tokenID: ${token.token_id}`)
+                          placeOrder(token.token_id, Side.BUY, parseFloat(unitSize))
                         }
                       >
                         FOK
@@ -119,8 +155,8 @@ const MarketDataPage: React.FC = () => {
   
                     {/* SELL section */}
                     <div className="order-box sell-box">
-                      <h5>Sell</h5>
-                      <button
+                    <h3>Sell {token.outcome} @ ${token.price}</h3>
+                      {/* <button
                         className="btn-sell"
                         onClick={() =>
                           alert(`(Placeholder) GTC Sell for tokenID: ${token.token_id}`)
@@ -135,11 +171,14 @@ const MarketDataPage: React.FC = () => {
                         }
                       >
                         GTD
-                      </button>
+                      </button> */}
+
+
+                      {/* FOK SELL */}
                       <button
                         className="btn-sell"
                         onClick={() =>
-                          alert(`(Placeholder) FOK (Market) Sell for tokenID: ${token.token_id}`)
+                          placeOrder(token.token_id, Side.SELL, parseFloat(unitSize))
                         }
                       >
                         FOK

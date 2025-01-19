@@ -98,7 +98,7 @@ input {
 }
 
 /* Additional styling for headings inside the boxes */
-.order-box h5 {
+.order-box h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
 }
@@ -115,6 +115,17 @@ input {
 }
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+.icon {
+    width: 3rem;
+    height: 3rem;
+}
+
+.unitsize {
+    margin: 0;
+    font-size: 1.5rem;
+    width: 7rem;
 }
 
 @media (prefers-reduced-motion: no-preference) {

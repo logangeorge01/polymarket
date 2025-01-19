@@ -1,6 +1,6 @@
-import { ApiKeyCreds, AssetType, Chain, ClobClient, PaginationPayload } from "@polymarket/clob-client";
+import { ApiKeyCreds, AssetType, Chain, ClobClient, OrderType, PaginationPayload, UserMarketOrder, Side } from "@polymarket/clob-client";
 import { Wallet } from "@ethersproject/wallet";
-import { SignatureType } from "@polymarket/order-utils";
+import { SignatureType, SignedOrder } from "@polymarket/order-utils";
 
 export interface Balance {
     address: string;
@@ -122,33 +122,54 @@ export const getMarketById = async (marketId: string): Promise<any> => {
 
     console.log(asdf);
     return asdf;
-    
-    // var nextCursor: string | undefined = undefined;
-    // var count = 0;
-    // while (true) {
-    //     const asdf: PaginationPayload = await clobClient.getMarkets(nextCursor);
-    //     const data = asdf.data;
-    //     nextCursor = asdf.next_cursor;
-    //     // console.log(nextCursor);
-    //     // console.log('count', asdf.count);
-    //     // console.log('limit', asdf.limit);
+}
 
-    //     const asdf1 = data.find((item) => item.question.toLowerCase().includes(searchString.toLowerCase()) && isSameDay(item.game_start_time));
+// polymarket js client code has a bug so writing my own
+export const getMarketPrice = async (tokenId: string, orderType: Side, amount: number): Promise<number> => {
+    const clobClient = ClobClientInstance.getInstance();
 
-    //     if (asdf1) {
-    //         // console.log('found item');
-    //         console.log(asdf1);
-    //         return asdf1;
-    //     }
-    //     if (nextCursor == 'LTE=') {
-    //         return 'error didnt find market';
-    //     };
-    //     // console.log(`didnt find going to next page, count: ${count}`);
-    //     count++;
-    //     // if (count > 10) {
-    //     //     // can remove once lte= confirmed to return, don't want infinite loop
-    //     //     return 'error didnt find market';
-    //     // }
-    // }
+    const book = await clobClient.getOrderBook(tokenId);
+    const positions = orderType == Side.BUY ? book.asks : book.bids;
+
+    let sum = 0;
+    for (let i = positions.length - 1; i >= 0; i--) {
+        const p = positions[i];
+        sum += parseFloat(p.size) * (orderType == Side.BUY ? parseFloat(p.price) : 1);
+        if (sum >= amount) {
+            return parseFloat(p.price);
+        }
+    }
+    return -1;
+}
+
+export const placeOrder = async (tokenId: string, orderType: Side, amount: number): Promise<any> => {
+    const clobClient = ClobClientInstance.getInstance();
+
+    // param amount
+    // shares to transact
+
+    // var quantity
+    // * BUY orders: $$$ Amount to buy
+    // * SELL orders: Shares to sell
+
+    var quantity: number = amount;
+    const marketPrice = await getMarketPrice(tokenId, orderType, amount);
+
+    if (orderType == Side.BUY) {
+        // console.log(buyPrice);
+        quantity = amount * marketPrice;
+    }
+
+    // console.log(quantity);
+
+    const userMarketOrder: UserMarketOrder = {
+        tokenID: tokenId,
+        side: orderType,
+        amount: quantity,
+        price: marketPrice// currently have to set limit price because createMarketOrder also calls getMarketPrice which has a bug
+    }
+    const marketOrder: SignedOrder = await clobClient.createMarketOrder(userMarketOrder);
+    const res = await clobClient.postOrder(marketOrder, OrderType.FOK);
+    console.log(res);
 }
 
