@@ -1,4 +1,4 @@
-import { ApiKeyCreds, AssetType, Chain, ClobClient, OrderType, PaginationPayload, UserMarketOrder, Side } from "@polymarket/clob-client";
+import { ApiKeyCreds, AssetType, Chain, ClobClient, OrderType, PaginationPayload, UserMarketOrder, Side, OrderSummary } from "@polymarket/clob-client";
 import { Wallet } from "@ethersproject/wallet";
 import { SignatureType, SignedOrder } from "@polymarket/order-utils";
 
@@ -141,6 +141,55 @@ export const getMarketPrice = async (tokenId: string, orderType: Side, amount: n
     }
     return -1;
 }
+
+export const getSlippageData = async (
+    tokenId: string,
+    orderType: Side,
+    amount: number
+  ): Promise<{
+    bestPrice: number;
+    finalPrice: number;
+    slippageValue: number;
+    slippagePercent: number;
+  }> => {
+    // 1) "Best Price" => treat it like you're taking a miniscule amount 
+    // to see which price you'd get if you only took the top-of-book.
+    const bestPrice = await getMarketPrice(tokenId, orderType, 0.000001);
+  
+    // 2) "Final Price" => the price you'd end on after consuming `amount` units
+    const finalPrice = await getMarketPrice(tokenId, orderType, amount);
+  
+    // If either is -1, that means there's no liquidity for even a tiny amount 
+    // or not enough liquidity for the full amount
+    if (bestPrice === -1 || finalPrice === -1) {
+      return {
+        bestPrice: -1,
+        finalPrice: -1,
+        slippageValue: 0,
+        slippagePercent: 0,
+      };
+    }
+  
+    // 3) Calculate slippage difference
+    // For a BUY: slippageValue = (finalPrice - bestPrice)
+    // For a SELL: slippageValue = (bestPrice - finalPrice)
+    let slippageValue = 0;
+    if (orderType === Side.BUY) {
+      slippageValue = finalPrice - bestPrice;
+    } else {
+      slippageValue = bestPrice - finalPrice;
+    }
+  
+    // 4) Slippage % relative to the best price
+    const slippagePercent = bestPrice !== 0 ? slippageValue / bestPrice : 0;
+  
+    return {
+      bestPrice,
+      finalPrice,
+      slippageValue,
+      slippagePercent,
+    };
+  };
 
 export const placeOrder = async (tokenId: string, orderType: Side, amount: number): Promise<any> => {
     const clobClient = ClobClientInstance.getInstance();
