@@ -1,6 +1,6 @@
 import { ApiKeyCreds, AssetType, Chain, ClobClient, OrderType, PaginationPayload, UserMarketOrder, Side } from "@polymarket/clob-client";
 import { Wallet } from "@ethersproject/wallet";
-import { SignatureType, SignedOrder } from "@polymarket/order-utils";
+import { SignatureType } from "@polymarket/order-utils";
 
 export interface Balance {
     address: string;
@@ -216,6 +216,43 @@ export const getSlippageData = async (
     };
   };
 
+export const getTokenBalance = async (tokenId: string): Promise<number> => {
+    const clobClient = ClobClientInstance.getInstance();
+
+    const balanceData = await clobClient.getBalanceAllowance({
+        asset_type: AssetType.CONDITIONAL,
+        token_id: tokenId
+    });
+
+    // Balance is returned as a string in the smallest unit (like wei)
+    // Convert to actual shares by dividing by 1,000,000
+    return parseFloat(balanceData.balance) / 1000000;
+};
+
+export const sellWholePosition = async (tokenId: string): Promise<any> => {
+    const clobClient = ClobClientInstance.getInstance();
+
+    // Get current balance for this token
+    const balance = await getTokenBalance(tokenId);
+    
+    if (balance <= 0) {
+        throw new Error(`No position to sell. Balance: ${balance}`);
+    }
+
+    console.log(`Selling whole position: ${balance} shares`);
+
+    // For SELL orders, amount is in shares
+    const userMarketOrder: UserMarketOrder = {
+        tokenID: tokenId,
+        side: Side.SELL,
+        amount: balance,
+    }
+
+    const res = await clobClient.createAndPostMarketOrder<OrderType.FOK>(userMarketOrder);
+    console.log(res);
+    return res;
+};
+
 export const placeOrder = async (tokenId: string, orderType: Side, amount: number): Promise<any> => {
     const clobClient = ClobClientInstance.getInstance();
 
@@ -245,10 +282,10 @@ export const placeOrder = async (tokenId: string, orderType: Side, amount: numbe
     // const asdfa = await clobClient.getApiKeys();
     // console.log(asdfa);
 
-    const marketOrder: SignedOrder = await clobClient.createMarketOrder(userMarketOrder);
+    // const marketOrder: SignedOrder = await clobClient.createMarketOrder(userMarketOrder);
     // console.log(marketOrder);
 
-    const res = await clobClient.postOrder(marketOrder, OrderType.FOK);
+    const res = await clobClient.createAndPostMarketOrder<OrderType.FOK>(userMarketOrder);
     console.log(res);
 }
 

@@ -9,6 +9,8 @@ import {
   placeOrder,
   // Keep your existing getMarketPrice if you need it, but now also:
   getSlippageData,
+  getTokenBalance,
+  sellWholePosition,
 } from "../services/polyservice";
 
 import { getDailyPnl } from "./DailyPnL";
@@ -42,6 +44,11 @@ const MarketDataPage: React.FC = () => {
         slippagePercent: number;
       };
     };
+  }>({});
+
+  // Store token balances: tokenBalanceMap[tokenId] = balance
+  const [tokenBalanceMap, setTokenBalanceMap] = useState<{
+    [tokenId: string]: number;
   }>({});
 
   // Format numbers
@@ -89,7 +96,7 @@ const MarketDataPage: React.FC = () => {
     fetchBalanceData();
   }, []);
 
-  // 3) Fetch slippage data
+  // 3) Fetch slippage data and token balances
   useEffect(() => {
     const fetchSlippage = async () => {
       if (!marketData?.tokens) return;
@@ -132,6 +139,42 @@ const MarketDataPage: React.FC = () => {
     // Cleanup interval on unmount or when dependencies change
     return () => clearInterval(intervalId);
   }, [marketData, unitSize]);
+
+  // 4) Fetch token balances
+  useEffect(() => {
+    const fetchBalances = async () => {
+      if (!marketData?.tokens) return;
+
+      try {
+        const balanceTasks = marketData.tokens.map(async (token: any) => {
+          const balance = await getTokenBalance(token.token_id);
+          return { tokenId: token.token_id, balance };
+        });
+
+        const results = await Promise.all(balanceTasks);
+        const newBalanceMap: any = {};
+
+        results.forEach((r) => {
+          newBalanceMap[r.tokenId] = r.balance;
+        });
+
+        setTokenBalanceMap(newBalanceMap);
+      } catch (err) {
+        console.error("Failed to fetch token balances:", err);
+      }
+    };
+
+    // Fetch immediately
+    fetchBalances();
+
+    // Set up interval to fetch balances every 5 seconds
+    const intervalId = setInterval(() => {
+      fetchBalances();
+    }, 5000);
+
+    // Cleanup interval on unmount or when dependencies change
+    return () => clearInterval(intervalId);
+  }, [marketData]);
 
   // Format date
   const formatDate = (isoString?: string) => {
@@ -229,9 +272,18 @@ const MarketDataPage: React.FC = () => {
             const buyTotalWin = sizeNum * 1.0; // Each unit worth $1 if wins
             const sellTotalReceive = sizeNum * sellFinal; // Total $ to receive
 
+            // Get current position
+            const currentPosition = tokenBalanceMap[token.token_id] || 0;
+
             return (
               <div className="token-item" key={index}>
                 <h3>{token.outcome}</h3>
+                <p>
+                  <strong>Current Position:</strong> {currentPosition.toFixed(2)} shares
+                  {currentPosition > 0 && sellBest !== -1 && (
+                    <> (≈ ${(currentPosition * sellBest).toFixed(2)} value)</>
+                  )}
+                </p>
                 <div className="order-actions">
                   {/* BUY section */}
                   <div className="order-box buy-box">
@@ -290,6 +342,26 @@ const MarketDataPage: React.FC = () => {
                         ? `Sell @ $${formatPrice(sellBest)}`
                         : `Sell ${sizeNum} for $${sellTotalReceive.toFixed(2)}`
                       }
+                    </button>
+                    <button
+                      className="btn-sell-all"
+                      onClick={async () => {
+                        try {
+                          await sellWholePosition(token.token_id);
+                          // Refresh balances after selling
+                          const newBalance = await getTokenBalance(token.token_id);
+                          setTokenBalanceMap(prev => ({
+                            ...prev,
+                            [token.token_id]: newBalance
+                          }));
+                        } catch (err: any) {
+                          alert(err.message || "Failed to sell position");
+                          console.error(err);
+                        }
+                      }}
+                      disabled={currentPosition <= 0}
+                    >
+                      Sell All ({currentPosition.toFixed(2)})
                     </button>
                   </div>
                 </div>
