@@ -89,7 +89,7 @@ const MarketDataPage: React.FC = () => {
     fetchBalanceData();
   }, []);
 
-  // 3) Whenever `unitSize` or `marketData` changes, re-fetch slippage
+  // 3) Fetch slippage data
   useEffect(() => {
     const fetchSlippage = async () => {
       if (!marketData?.tokens) return;
@@ -121,7 +121,16 @@ const MarketDataPage: React.FC = () => {
       }
     };
 
+    // Fetch immediately
     fetchSlippage();
+
+    // Set up interval to fetch every second
+    const intervalId = setInterval(() => {
+      fetchSlippage();
+    }, 5000);
+
+    // Cleanup interval on unmount or when dependencies change
+    return () => clearInterval(intervalId);
   }, [marketData, unitSize]);
 
   // Format date
@@ -214,6 +223,12 @@ const MarketDataPage: React.FC = () => {
             const sellSlipVal = slip.sell.slippageValue;
             const sellSlipPct = slip.sell.slippagePercent;
 
+            // Calculate totals
+            const sizeNum = parseFloat(unitSize) || 0;
+            const buyTotalCost = sizeNum * buyFinal; // Total $ to spend
+            const buyTotalWin = sizeNum * 1.0; // Each unit worth $1 if wins
+            const sellTotalReceive = sizeNum * sellFinal; // Total $ to receive
+
             return (
               <div className="token-item" key={index}>
                 <h3>{token.outcome}</h3>
@@ -239,9 +254,12 @@ const MarketDataPage: React.FC = () => {
                       onClick={() =>
                         placeOrder(token.token_id, Side.BUY, parseFloat(unitSize))
                       }
+                      disabled={buyFinal === -1 || sizeNum <= 0}
                     >
-                      Buy @ $
-                      {buyFinal === -1 ? formatPrice(buyBest) : formatPrice(buyFinal)}
+                      {buyFinal === -1 || sizeNum <= 0 
+                        ? `Buy @ $${formatPrice(buyBest)}`
+                        : `Buy $${buyTotalCost.toFixed(2)} to win $${buyTotalWin.toFixed(2)}`
+                      }
                     </button>
                   </div>
 
@@ -266,11 +284,12 @@ const MarketDataPage: React.FC = () => {
                       onClick={() =>
                         placeOrder(token.token_id, Side.SELL, parseFloat(unitSize))
                       }
+                      disabled={sellFinal === -1 || sizeNum <= 0}
                     >
-                      Sell @ $
-                      {sellFinal === -1
-                        ? formatPrice(sellBest)
-                        : formatPrice(sellFinal)}
+                      {sellFinal === -1 || sizeNum <= 0
+                        ? `Sell @ $${formatPrice(sellBest)}`
+                        : `Sell ${sizeNum} for $${sellTotalReceive.toFixed(2)}`
+                      }
                     </button>
                   </div>
                 </div>

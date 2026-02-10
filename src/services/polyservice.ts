@@ -1,4 +1,4 @@
-import { ApiKeyCreds, AssetType, Chain, ClobClient, OrderType, PaginationPayload, UserMarketOrder, Side, OrderSummary } from "@polymarket/clob-client";
+import { ApiKeyCreds, AssetType, Chain, ClobClient, OrderType, PaginationPayload, UserMarketOrder, Side } from "@polymarket/clob-client";
 import { Wallet } from "@ethersproject/wallet";
 import { SignatureType, SignedOrder } from "@polymarket/order-utils";
 
@@ -83,6 +83,31 @@ function isSameDay(gameStartTime: string) {
            gst.getDate() === cur.getDate();
 }
 
+export const searchMarkets = async (
+    query: string
+): Promise<any> => {
+    const params = new URLSearchParams({
+        q: query
+    });
+
+    // Use backend proxy to avoid CORS issues
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    const url = `${backendUrl}/search?${params.toString()}`;
+    
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error searching markets:', error);
+        throw error;
+    }
+}
+
+// Legacy function - consider using searchMarkets instead
 export const getMarket = async (searchString: string): Promise<any> => {
     const clobClient = ClobClientInstance.getInstance();
 
@@ -215,7 +240,7 @@ export const placeOrder = async (tokenId: string, orderType: Side, amount: numbe
         tokenID: tokenId,
         side: orderType,
         amount: quantity,
-        price: marketPrice// currently have to set limit price because createMarketOrder also calls getMarketPrice which has a bug
+        // price: marketPrice// currently have to set limit price because createMarketOrder also calls getMarketPrice which has a bug
     }
     // const asdfa = await clobClient.getApiKeys();
     // console.log(asdfa);

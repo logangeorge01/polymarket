@@ -3,6 +3,7 @@ import React/*, { useEffect, useState }*/ from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import MarketDataPage from "./MarketDataPage";
 import HomePage from "./HomePage";
+import SearchResultsPage from "./SearchResultsPage";
 import "./App.css";
 
 const App: React.FC = () => {
@@ -10,6 +11,7 @@ const App: React.FC = () => {
       <Router>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/search" element={<SearchResultsPage />} />
             <Route path="/market/:marketId" element={<MarketDataPage />} />
           </Routes>
       </Router>

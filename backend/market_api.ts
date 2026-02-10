@@ -1,7 +1,13 @@
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
+import dotenv from "dotenv";
 import { ClobClient, Side, OrderType } from "@polymarket/clob-client";
-import { ethers } from "ethers";
+import { Wallet } from "@ethersproject/wallet";
+import { JsonRpcProvider } from "@ethersproject/providers";
+
+// Load environment variables from .env file
+dotenv.config();
 
 const PORT: number = parseInt(process.env.PORT || "3000", 10);
 const CLOB_HOST: string = process.env.CLOB_HOST || "https://clob.polymarket.com";
@@ -14,10 +20,11 @@ if (!PRIVATE_KEY) {
 }
 
 const app = express();
+app.use(cors()); // Enable CORS for all routes
 app.use(bodyParser.json());
 
-const provider: ethers.providers.JsonRpcProvider = new ethers.providers.JsonRpcProvider("https://polygon-rpc.com");
-const wallet: ethers.Wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const provider: JsonRpcProvider = new JsonRpcProvider("https://polygon-rpc.com");
+const wallet: Wallet = new Wallet(PRIVATE_KEY, provider);
 
 const clobClient: ClobClient = new ClobClient(
   CLOB_HOST,
@@ -37,6 +44,66 @@ app.get("/markets", async (req, res) => {
   } catch (error: unknown) {
     console.error("Error fetching markets:", error);
     res.status(500).send({ error: "Failed to fetch markets." });
+  }
+});
+
+app.get("/search", async (req, res) => {
+  try {
+    const query = req.query.q as string;
+
+    if (!query) {
+      return res.status(400).send({ error: "Query parameter 'q' is required." });
+    }
+
+    // Fetch all results by paginating through the API
+    const allEvents: any[] = [];
+    let offset = 0;
+    const limit = 50; // Max allowed by API
+    let hasMore = true;
+
+    while (hasMore) {
+      const params = new URLSearchParams({
+        q: query,
+        limit: limit.toString(),
+        offset: offset.toString(),
+        events_status: "active"
+      });
+
+      const url = `https://gamma-api.polymarket.com/public-search?${params.toString()}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.events && data.events.length > 0) {
+        // Filter out closed events
+        const openEvents = data.events.filter((event: any) => !event.closed);
+        allEvents.push(...openEvents);
+        offset += limit;
+        
+        // If we got fewer results than the limit, we've reached the end
+        if (data.events.length < limit) {
+          hasMore = false;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    // Sort by startDate ascending (earliest first)
+    allEvents.sort((a, b) => {
+      const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+      const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+      return dateA - dateB;
+    });
+
+    res.send({ events: allEvents });
+  } catch (error: unknown) {
+    console.error("Error searching markets:", error);
+    res.status(500).send({ error: "Failed to search markets." });
   }
 });
 

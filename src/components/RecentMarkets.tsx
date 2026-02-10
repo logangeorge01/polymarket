@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from "react";
 // import { useNavigate } from "react-router-dom";
-import { getRecentMarkets } from "../services/recentMarketsUtil";
+import { getRecentMarkets, RecentMarket, clearRecentMarkets } from "../services/recentMarketsUtil";
 
 const RecentMarkets: React.FC = () => {
-    const [recentMarkets, setRecentMarkets] = useState<Record<string, string>>({});
+    const [recentMarkets, setRecentMarkets] = useState<RecentMarket[]>([]);
     // const navigate = useNavigate();
 
     useEffect(() => {
         setRecentMarkets(getRecentMarkets());
     }, []);
 
+    const handleClearRecents = () => {
+        clearRecentMarkets();
+        setRecentMarkets([]);
+    };
+
     return (
         <div className="card">
-            <h3>Recently Viewed Markets</h3>
-            {Object.keys(recentMarkets).length > 0 ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3>Recently Viewed Markets</h3>
+                {recentMarkets.length > 0 && (
+                    <button onClick={handleClearRecents}>Clear</button>
+                )}
+            </div>
+            {recentMarkets.length > 0 ? (
                 <div>
-                    {Object.entries(recentMarkets).map(([name, marketId]) => (
-                        <div key={marketId}>
+                    {recentMarkets.map((market) => (
+                        <div key={market.marketId}>
                             <a
-                                href={`/market/${marketId}`}
+                                href={`/market/${market.marketId}`}
                                 style={{
                                     color: "blue",
                                     textDecoration: "underline",
@@ -26,7 +36,7 @@ const RecentMarkets: React.FC = () => {
                                     display: "block", // Ensures each link is on a new line
                                 }}
                             >
-                                {name}
+                                {market.name}
                             </a>
                         </div>
                     ))}

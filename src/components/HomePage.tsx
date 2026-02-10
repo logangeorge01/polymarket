@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getBalance, getMarket, getMarketById } from "../services/polyservice";
+import { getBalance, getMarketById } from "../services/polyservice";
 import "./App.css";
 import { useNavigate } from "react-router";
 import RecentMarkets from "./RecentMarkets";
@@ -13,7 +13,6 @@ const HomePage: React.FC = () => {
   const [searchString, setSearchString] = useState("");
   const [marketIdString, setMarketIdString] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [searching, setSearching] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
@@ -35,25 +34,14 @@ const HomePage: React.FC = () => {
     fetchBalanceData();
   }, []);
 
-  // Fetch market data on button click
+  // Navigate to search results page
   const handleFetchMarket = async () => {
-    setSearching(true);
-    try {
-      if (!searchString) {
-        setError("Please enter a search string.");
-        setSearching(false);
-        return;
-      }
-      setError(null);
-      const result = await getMarket(searchString);
-      addRecentMarket(result.question, result.condition_id);
-      navigate(`/market/${result.condition_id}`);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch market data.");
-    } finally {
-      setSearching(false);
+    if (!searchString) {
+      setError("Please enter a search string.");
+      return;
     }
+    setError(null);
+    navigate(`/search?q=${encodeURIComponent(searchString)}`);
   };
 
   // Fetch market by ID
@@ -76,9 +64,6 @@ const HomePage: React.FC = () => {
     }
   };
 
-  if (searching) {
-    return <div>Searching for '{searchString}' market...</div>;
-  }
 
   let pnlClass = "pnl-zero";
   if (dailyPnl > 0) pnlClass = "pnl-positive";
